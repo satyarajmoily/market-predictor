@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  market-predictor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      # Mount source code for development (comment out for production)
+      - ../src:/app/src
+      - ../.env:/app/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

@@ -25,453 +25,147 @@ The Market Predictor is the **target of autonomous improvement** - the agent mon
 
 ---
 
-## 🚀 Development Roadmap
+## 🚀 Quick Start
 
-### Milestone 1: Foundation - Basic Prediction Service
-**Goal**: Establish a working FastAPI prediction server with core functionality
+### Development Setup
 
-#### Phase 1.1: Project Structure & Environment Setup
-**Duration**: 1-2 days
-**Deliverables**:
-- [ ] Python project structure with proper packaging
-- [ ] Virtual environment configuration
-- [ ] Basic requirements.txt with FastAPI dependencies
-- [ ] Docker configuration for containerized deployment
-- [ ] Environment variable management (.env support)
+```bash
+# Clone the repository
+git clone <repository-url>
+cd market-predictor
 
-**Technical Implementation**:
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy environment template
+cp .env.example .env
+
+# Run development server
+python -m uvicorn src.predictor.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Docker Setup
+
+```bash
+# Build and run with Docker Compose
+cd docker
+docker-compose up --build
+
+# Or build manually
+docker build -f docker/Dockerfile -t market-predictor .
+docker run -p 8000:8000 --env-file .env market-predictor
+```
+
+### API Endpoints
+
+Once running, the service provides:
+
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+- **Detailed Status**: http://localhost:8000/status
+- **Prometheus Metrics**: http://localhost:8000/metrics ⚡ NEW!
+- **Root Info**: http://localhost:8000/
+
+---
+
+## 📁 Project Structure
+
 ```
 market-predictor/
 ├── src/
-│   ├── predictor/
-│   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI app entry point
-│   │   ├── models/              # Prediction models
-│   │   ├── api/                 # API route handlers
-│   │   ├── services/            # Business logic
-│   │   └── config/              # Configuration management
-├── tests/
+│   └── predictor/
+│       ├── __init__.py
+│       ├── main.py              # FastAPI app entry point
+│       ├── api/                 # API route handlers
+│       ├── services/            # Business logic
+│       ├── models/              # Pydantic models
+│       │   └── health.py        # Health check models
+│       └── config/
+│           └── settings.py      # Configuration management
+├── tests/                       # Test suite
 ├── docker/
-├── requirements.txt
-├── Dockerfile
-└── docker-compose.yml
+│   ├── Dockerfile              # Production container
+│   └── docker-compose.yml      # Development environment
+├── requirements.txt             # Production dependencies
+├── requirements-dev.txt         # Development dependencies
+├── .env.example                # Environment template
+└── memory-bank/                # Project documentation
 ```
-
-**Key Files**:
-- `src/predictor/main.py`: FastAPI application factory
-- `src/predictor/config/settings.py`: Configuration management using Pydantic
-- `requirements.txt`: Core dependencies (FastAPI, uvicorn, pydantic, requests)
-
-#### Phase 1.2: Core API Endpoints
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] `/predict` endpoint for Bitcoin price predictions
-- [ ] `/health` endpoint for service health checks
-- [ ] `/status` endpoint for detailed service status
-- [ ] Pydantic models for request/response validation
-- [ ] Error handling and HTTP status codes
-
-**API Specification**:
-```python
-# Prediction Request Model
-class PredictionRequest(BaseModel):
-    timeframe: str = "1h"  # 1h, 4h, 1d
-    data_points: Optional[int] = 100
-    include_confidence: bool = True
-
-# Prediction Response Model
-class PredictionResponse(BaseModel):
-    predicted_price: float
-    confidence_score: float
-    prediction_timestamp: datetime
-    model_version: str
-    timeframe: str
-```
-
-**Endpoints**:
-- `POST /api/v1/predict` - Main prediction endpoint
-- `GET /health` - Basic health check (returns 200 OK)
-- `GET /status` - Detailed status (uptime, model info, last prediction)
-- `GET /docs` - Auto-generated API documentation
-
-#### Phase 1.3: Basic Prediction Logic Implementation
-**Duration**: 3-4 days
-**Deliverables**:
-- [ ] Dummy prediction model (random walk, moving average)
-- [ ] Model interface for future ML model integration
-- [ ] Data validation and preprocessing
-- [ ] Response caching mechanism
-- [ ] Basic error handling for prediction failures
-
-**Technical Implementation**:
-```python
-class PredictionModel:
-    def predict(self, input_data: dict) -> PredictionResult:
-        # Initial implementation: Simple moving average or random walk
-        pass
-
-class PredictionService:
-    def __init__(self, model: PredictionModel):
-        self.model = model
-        self.cache = TTLCache(maxsize=100, ttl=300)  # 5-minute cache
-    
-    async def get_prediction(self, request: PredictionRequest) -> PredictionResponse:
-        # Implement caching, validation, and prediction logic
-        pass
-```
-
-#### Phase 1.4: Local Testing & Validation
-**Duration**: 1-2 days
-**Deliverables**:
-- [ ] Unit tests for API endpoints
-- [ ] Integration tests for prediction workflow
-- [ ] Load testing with sample requests
-- [ ] API documentation validation
-- [ ] Local deployment verification
-
-**Testing Strategy**:
-- Unit tests: `pytest` for individual components
-- Integration tests: `httpx` for API testing
-- Load tests: Basic stress testing with `locust` or similar
-- Docker testing: Verify containerized deployment
 
 ---
 
-### Milestone 2: Monitoring Integration - Prometheus & Observability
-**Goal**: Integrate comprehensive monitoring and metrics for autonomous agent consumption
+## 🔧 Configuration
 
-#### Phase 2.1: Prometheus Metrics Implementation
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] Prometheus client library integration
-- [ ] Custom metrics for prediction service
-- [ ] `/metrics` endpoint for Prometheus scraping
-- [ ] Middleware for automatic request tracking
-- [ ] Performance metrics collection
+The service uses Pydantic Settings for configuration management. Environment variables can be set in `.env` file:
 
-**Metrics Implementation**:
-```python
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
+```bash
+# Environment Configuration
+ENVIRONMENT=development
+LOG_LEVEL=DEBUG
+DEBUG=true
 
-# Core Metrics
-prediction_requests_total = Counter(
-    'prediction_requests_total',
-    'Total prediction requests',
-    ['method', 'endpoint', 'status']
-)
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+API_PREFIX=/api/v1
 
-prediction_duration_seconds = Histogram(
-    'prediction_duration_seconds',
-    'Time spent on predictions',
-    ['model_version']
-)
+# Service Configuration
+SERVICE_NAME=market-predictor
+SERVICE_VERSION=0.1.0
 
-prediction_confidence_score = Gauge(
-    'prediction_confidence_current',
-    'Current prediction confidence score'
-)
+# Model Configuration
+MODEL_TYPE=dummy
+CACHE_TTL=300
 
-model_last_updated = Gauge(
-    'model_last_updated_timestamp',
-    'Timestamp of last model update'
-)
+# Monitoring Configuration
+METRICS_ENABLED=true
+HEALTH_CHECK_INTERVAL=30
 ```
-
-**Key Metrics Categories**:
-- **Request Metrics**: Count, duration, status codes
-- **Prediction Metrics**: Confidence scores, model performance
-- **System Metrics**: Memory usage, CPU, response times
-- **Business Metrics**: Prediction accuracy, model drift
-
-#### Phase 2.2: Advanced Instrumentation
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] FastAPI middleware for automatic instrumentation
-- [ ] Custom business logic metrics
-- [ ] Resource utilization tracking
-- [ ] Model performance metrics
-- [ ] Alert-ready metric thresholds
-
-**Implementation Details**:
-```python
-@app.middleware("http")
-async def prometheus_middleware(request: Request, call_next):
-    start_time = time.time()
-    
-    response = await call_next(request)
-    
-    # Record metrics
-    prediction_requests_total.labels(
-        method=request.method,
-        endpoint=request.url.path,
-        status=response.status_code
-    ).inc()
-    
-    prediction_duration_seconds.labels(
-        model_version=get_current_model_version()
-    ).observe(time.time() - start_time)
-    
-    return response
-```
-
-#### Phase 2.3: Health Check Enhancement
-**Duration**: 1-2 days
-**Deliverables**:
-- [ ] Comprehensive health check system
-- [ ] Dependency health verification
-- [ ] Performance benchmark validation
-- [ ] Graceful degradation indicators
-- [ ] Health status metrics
-
-**Health Check Categories**:
-- **Service Health**: API responsiveness, memory usage
-- **Model Health**: Model availability, last training date
-- **Data Health**: Input validation, data freshness
-- **External Dependencies**: Database, external APIs
 
 ---
 
-### Milestone 3: Logging & Observability - Loki Integration
-**Goal**: Implement structured logging for autonomous analysis by the programmer agent
+## 🧪 Testing
 
-#### Phase 3.1: Structured Logging Implementation
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] JSON-structured logging with Python logging
-- [ ] Log correlation IDs for request tracing
-- [ ] Different log levels and categories
-- [ ] Log sanitization for sensitive data
-- [ ] Performance-optimized logging
+```bash
+# Install development dependencies
+pip install -r requirements-dev.txt
 
-**Logging Structure**:
-```python
-import structlog
+# Run tests
+pytest tests/ -v
 
-logger = structlog.get_logger()
+# Run tests with coverage
+pytest tests/ --cov=src/predictor --cov-report=html
 
-# Structured log example
-logger.info(
-    "prediction_completed",
-    request_id=request_id,
-    user_id=user_id,
-    model_version="v1.2.3",
-    prediction_value=1234.56,
-    confidence_score=0.85,
-    processing_time_ms=125,
-    input_features=feature_count
-)
+# Run linting
+flake8 src/ tests/
+black src/ tests/
+mypy src/
 ```
 
-**Log Categories**:
-- **Request Logs**: API calls, parameters, responses
-- **Prediction Logs**: Model inputs, outputs, confidence
-- **Error Logs**: Exceptions, stack traces, error context
-- **Performance Logs**: Timing, resource usage, bottlenecks
-- **Security Logs**: Authentication, authorization events
-
-#### Phase 3.2: Loki Integration & Log Shipping
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] Promtail configuration for log shipping
-- [ ] Log labels for Loki querying
-- [ ] Log retention policies
-- [ ] Log parsing and filtering rules
-- [ ] Dashboard-ready log format
-
-**Promtail Configuration**:
-```yaml
-server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
-
-positions:
-  filename: /tmp/positions.yaml
-
-clients:
-  - url: http://loki:3100/loki/api/v1/push
-
-scrape_configs:
-  - job_name: predictor
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: predictor
-          service: market-predictor
-          __path__: /var/log/predictor/*.log
-```
-
-#### Phase 3.3: Error Tracking & Diagnostics
-**Duration**: 1-2 days
-**Deliverables**:
-- [ ] Exception tracking and categorization
-- [ ] Stack trace logging with context
-- [ ] Error rate monitoring
-- [ ] Diagnostic information collection
-- [ ] Recovery attempt logging
-
 ---
 
-### Milestone 4: Production Readiness - CI/CD & Deployment
-**Goal**: Prepare the service for autonomous deployment and updates
+## 📊 Current Status: Phase 1.2 Complete ✅ (Prometheus Metrics)
 
-#### Phase 4.1: CI/CD Pipeline Setup
-**Duration**: 3-4 days
-**Deliverables**:
-- [ ] GitHub Actions workflow for testing
-- [ ] Automated testing on PR creation
-- [ ] Docker image building and publishing
-- [ ] Deployment automation
-- [ ] Rollback capabilities
+### ✅ Completed Features:
+- **Project Structure**: Complete Python package with proper structure
+- **FastAPI Application**: Working web service with health endpoints
+- **Configuration Management**: Pydantic settings with environment variables
+- **Docker Support**: Containerization with development environment
+- **Health Endpoints**: `/health` and `/status` endpoints functional
+- **⚡ Prometheus Metrics**: `/metrics` endpoint with HTTP request counters and duration histograms
+- **⚡ Event-Driven Architecture**: Professional monitoring stack with Prometheus + Alertmanager
+- **⚡ Alert Rules**: Production-ready alerts for service monitoring
+- **Development Environment**: Ready for local development
 
-**GitHub Actions Workflow**:
-```yaml
-name: Market Predictor CI/CD
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
-          pip install pytest pytest-cov
-      - name: Run tests
-        run: pytest --cov=src/predictor tests/
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Deploy to production
-        run: |
-          # Deployment script
-```
-
-#### Phase 4.2: Model Management & Versioning
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] Model versioning system
-- [ ] Model artifact storage
-- [ ] A/B testing framework for models
-- [ ] Model rollback capabilities
-- [ ] Performance comparison tracking
-
-#### Phase 4.3: Configuration Management
-**Duration**: 1-2 days
-**Deliverables**:
-- [ ] Environment-specific configurations
-- [ ] Secret management integration
-- [ ] Feature flags for A/B testing
-- [ ] Runtime configuration updates
-- [ ] Configuration validation
-
----
-
-### Milestone 5: Enhanced Prediction Capabilities
-**Goal**: Implement advanced prediction features and model improvements
-
-#### Phase 5.1: Advanced Prediction Models
-**Duration**: 1-2 weeks
-**Deliverables**:
-- [ ] Multiple prediction algorithms (LSTM, ARIMA, Prophet)
-- [ ] Ensemble model predictions
-- [ ] Feature engineering pipeline
-- [ ] Model training automation
-- [ ] Hyperparameter optimization
-
-#### Phase 5.2: Real-time Data Integration
-**Duration**: 1 week
-**Deliverables**:
-- [ ] Live market data feeds
-- [ ] Data preprocessing pipelines
-- [ ] Real-time prediction updates
-- [ ] Data quality monitoring
-- [ ] Streaming data handling
-
-#### Phase 5.3: Performance Optimization
-**Duration**: 3-5 days
-**Deliverables**:
-- [ ] Prediction caching strategies
-- [ ] Database optimization
-- [ ] API response time optimization
-- [ ] Resource usage optimization
-- [ ] Scalability improvements
-
----
-
-### Milestone 6: Production Hardening & Resilience
-**Goal**: Ensure production-grade reliability and performance
-
-#### Phase 6.1: Security Implementation
-**Duration**: 3-4 days
-**Deliverables**:
-- [ ] API authentication and authorization
-- [ ] Rate limiting and throttling
-- [ ] Input validation and sanitization
-- [ ] Security headers and CORS
-- [ ] Vulnerability scanning integration
-
-#### Phase 6.2: Reliability & Fault Tolerance
-**Duration**: 3-4 days
-**Deliverables**:
-- [ ] Circuit breaker patterns
-- [ ] Retry mechanisms with exponential backoff
-- [ ] Graceful degradation
-- [ ] Health check improvements
-- [ ] Disaster recovery procedures
-
-#### Phase 6.3: Monitoring & Alerting Enhancement
-**Duration**: 2-3 days
-**Deliverables**:
-- [ ] SLA-based monitoring
-- [ ] Predictive alerting
-- [ ] Performance benchmarking
-- [ ] Capacity planning metrics
-- [ ] Business KPI tracking
-
----
-
-## 🔧 Technical Stack
-
-### Core Technologies
-- **Framework**: FastAPI 0.104+
-- **Python**: 3.11+
-- **ASGI Server**: Uvicorn
-- **Validation**: Pydantic v2
-- **Testing**: Pytest, httpx
-
-### Monitoring & Observability
-- **Metrics**: Prometheus (prometheus-client)
-- **Logging**: Structlog, JSON formatting
-- **Log Aggregation**: Compatible with Loki/Promtail
-- **Health Checks**: Custom health check framework
-
-### Data & ML
-- **Data Processing**: Pandas, NumPy
-- **ML Libraries**: Scikit-learn, TensorFlow/PyTorch
-- **Time Series**: Prophet, ARIMA models
-- **Feature Engineering**: Custom pipeline framework
-
-### Infrastructure
-- **Containerization**: Docker, Docker Compose
-- **Deployment**: Oracle Cloud Infrastructure (Always Free)
-- **CI/CD**: GitHub Actions
-- **Database**: PostgreSQL (for model storage)
+### 🔜 Next Steps (Phase 1.3):
+- Implement `/predict` endpoint for Bitcoin price predictions
+- Add request/response validation with Pydantic models
+- Create prediction service with caching
+- Implement proper error handling and HTTP status codes
 
 ---
 
@@ -479,50 +173,40 @@ jobs:
 
 The Market Predictor is designed to be monitored and improved by the Market Programmer Agent:
 
-### Metrics Endpoints for Agent Monitoring
-- `GET /metrics` - Prometheus-formatted metrics
-- `GET /health` - Health status for agent monitoring
-- `GET /status` - Detailed status for agent analysis
+### Event-Driven Monitoring (Professional Architecture) ⚡
+- `GET /health` - Basic health status for agent monitoring
+- `GET /status` - Detailed status for agent analysis (includes uptime, components)
+- `GET /metrics` - ✅ Prometheus-formatted metrics (HTTP counters, durations, health checks)
+- **Alert Rules** - ✅ Production-ready alerts for service issues
+- **Alertmanager** - ✅ Routes alerts to Market Programmer Agent webhooks
 
-### Log Integration for Agent Analysis
+### Agent Integration Architecture
+```
+Prometheus → Alert Rules → Alertmanager → Agent Webhooks → AI Analysis
+     ↑                                                           ↓
+Market Predictor /metrics                               Intelligent Actions
+```
+
+### Future Integration (Later Phases)
 - **Structured JSON logs** for easy parsing
-- **Error categorization** for agent classification
-- **Performance metrics** in logs for trend analysis
-- **Request tracing** for debugging assistance
-
-### API Stability for Agent Operations
-- **Versioned APIs** to prevent breaking changes
-- **Backward compatibility** during agent-driven updates
-- **Feature flags** for safe A/B testing
-- **Graceful degradation** during maintenance
-
-### Deployment Integration
+- **API versioning** to prevent breaking changes
 - **GitHub Actions** respond to agent-created PRs
-- **Automated testing** validates agent-proposed changes
-- **Rollback capabilities** for failed agent deployments
-- **Status webhooks** notify agent of deployment results
 
 ---
 
-## 📊 Success Metrics
+## 📈 Development Roadmap
 
-### Performance KPIs
-- **Response Time**: < 100ms for predictions
-- **Availability**: > 99.9% uptime
-- **Throughput**: > 1000 requests/minute
-- **Error Rate**: < 0.1% of requests
+### Milestone 1: Foundation (Current)
+- **Phase 1.1**: ✅ Project Structure & Environment Setup
+- **Phase 1.2**: ✅ Prometheus Metrics & Event-Driven Architecture ⚡
+- **Phase 1.3**: 🔄 Core API Endpoints (`/predict`, error handling)
+- **Phase 1.4**: ⏳ Basic Prediction Logic Implementation
+- **Phase 1.5**: ⏳ Local Testing & Validation
 
-### Prediction Quality
-- **Accuracy**: Continuously improving prediction accuracy
-- **Confidence**: Reliable confidence scoring
-- **Model Performance**: Regular model evaluation metrics
-- **Data Quality**: Real-time data validation
-
-### Autonomous Operation
-- **Agent Compatibility**: Seamless integration with programmer agent
-- **Monitoring Coverage**: 100% observability for agent analysis
-- **Deployment Success**: Successful agent-driven deployments
-- **Self-Healing**: Automatic recovery from common issues
+### Future Milestones
+- **Milestone 2**: Prediction Service Implementation
+- **Milestone 3**: Logging & Observability (Loki integration)
+- **Milestone 4**: Production Readiness (CI/CD & deployment)
 
 ---
 
@@ -533,13 +217,12 @@ This repository is part of an autonomous trading system where the Market Program
 1. **Fork** the repository
 2. **Create** a feature branch
 3. **Implement** changes with comprehensive tests
-4. **Ensure** all metrics and logging are properly instrumented
+4. **Ensure** all health endpoints remain functional
 5. **Submit** a pull request with detailed description
 
 ### Development Guidelines
 - Maintain **high test coverage** (>90%)
-- Include **proper logging** for agent analysis
-- Add **appropriate metrics** for monitoring
+- Include **proper health checks** for agent monitoring
 - Follow **FastAPI best practices**
 - Document **API changes** thoroughly
 
